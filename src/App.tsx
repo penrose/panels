@@ -1,5 +1,7 @@
 import React, { useReducer } from "react";
+import PanelGroup from "react-panelgroup";
 import styled from "styled-components";
+import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
 
 const TabButton = styled.a<{ open: boolean }>`
@@ -16,12 +18,25 @@ const TabButton = styled.a<{ open: boolean }>`
   user-select: none;
 `;
 
+const panelWidth = (toggled: boolean) => ({
+  size: toggled ? 100 : 0,
+  minSize: 0,
+});
+
 function App() {
   const [state, dispatch] = useReducer(reducer, {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
   });
   return (
-    <div className="App">
+    <div
+      className="App"
+      style={{
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <nav
         style={{
           display: "flex",
@@ -61,6 +76,26 @@ function App() {
           👁️
         </TabButton>
       </nav>
+      <div style={{ flexGrow: 1 }}>
+        <PanelGroup
+          borderColor="#a9a9a9"
+          panelWidths={[
+            panelWidth(state.openPanes.sub),
+            panelWidth(state.openPanes.sty),
+            panelWidth(state.openPanes.dsl),
+            panelWidth(state.openPanes.preview),
+          ]}
+        >
+          <MonacoEditor />
+          <MonacoEditor />
+          <MonacoEditor />
+          {
+            <div
+              style={{ backgroundColor: "blue", width: "100%", height: "100%" }}
+            />
+          }
+        </PanelGroup>
+      </div>
     </div>
   );
 }
