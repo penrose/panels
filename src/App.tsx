@@ -1,6 +1,6 @@
 import React, { useReducer } from "react";
-import PanelGroup from "react-panelgroup";
 import styled from "styled-components";
+import SplitPane from "react-split-pane";
 import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
 
@@ -27,6 +27,9 @@ function App() {
   const [state, dispatch] = useReducer(reducer, {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
   });
+  const openKeys = Object.entries(state.openPanes)
+    .filter(([name, isOpen]: any) => isOpen)
+    .map(([name, isOpen]: any) => name);
   return (
     <div
       className="App"
@@ -77,24 +80,47 @@ function App() {
         </TabButton>
       </nav>
       <div style={{ flexGrow: 1 }}>
-        <PanelGroup
-          borderColor="#a9a9a9"
-          panelWidths={[
-            panelWidth(state.openPanes.sub),
-            panelWidth(state.openPanes.sty),
-            panelWidth(state.openPanes.dsl),
-            panelWidth(state.openPanes.preview),
-          ]}
-        >
-          <MonacoEditor />
-          <MonacoEditor />
-          <MonacoEditor />
-          {
-            <div
-              style={{ backgroundColor: "blue", width: "100%", height: "100%" }}
-            />
+        {openKeys.reduce((child: any, paneName: any, index: number): any => {
+          // I am so sorry. This is because <SplitPane> only supports nested
+
+          let el;
+          switch (paneName) {
+            case "sub":
+              el = <MonacoEditor />;
+              break;
+            case "sty":
+              el = <MonacoEditor />;
+              break;
+            case "dsl":
+              el = <MonacoEditor />;
+              break;
+            case "preview":
+              el = (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "blue",
+                  }}
+                />
+              );
+              break;
+            default:
+              console.error("wat");
           }
-        </PanelGroup>
+          if (index === 0) {
+            return el;
+          }
+          return (
+            <SplitPane
+              split="vertical"
+              defaultSize={`${(openKeys.length / 4) * 100}%`}
+            >
+              {el}
+              {child}
+            </SplitPane>
+          );
+        }, <div />)}
       </div>
     </div>
   );
