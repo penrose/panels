@@ -18,11 +18,6 @@ const TabButton = styled.a<{ open: boolean }>`
   user-select: none;
 `;
 
-const panelWidth = (toggled: boolean) => ({
-  size: toggled ? 100 : 0,
-  minSize: 0,
-});
-
 function App() {
   const [state, dispatch] = useReducer(reducer, {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
@@ -114,13 +109,15 @@ function App() {
           return (
             <SplitPane
               split="vertical"
-              defaultSize={`${(openKeys.length / 4) * 100}%`}
+              size={`${100 / openKeys.length}%`}
+              minSize={100}
             >
               {el}
               {child}
             </SplitPane>
           );
         }, <div />)}
+        {openKeys.length === 0 && <span>none open</span>}
       </div>
     </div>
   );
