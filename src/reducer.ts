@@ -26,7 +26,8 @@ export type Action =
   | { kind: "TOGGLE_PREVIEW_PANE" }
   | { kind: "CHANGE_SUB"; content: string }
   | { kind: "CHANGE_STY"; content: string }
-  | { kind: "CHANGE_DSL"; content: string };
+  | { kind: "CHANGE_DSL"; content: string }
+  | { kind: "CHANGE_CANVAS_STATE"; content: PenroseState | null };
 
 const reducer = (state: State, action: Action): State => {
   switch (action.kind) {
@@ -64,6 +65,11 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         currentInstance: { ...state.currentInstance, sub: action.content },
+      };
+    case "CHANGE_CANVAS_STATE":
+      return {
+        ...state,
+        currentInstance: { ...state.currentInstance, state: action.content },
       };
   }
 };

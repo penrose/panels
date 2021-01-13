@@ -1,9 +1,9 @@
-import React, { useReducer } from "react";
+import React, { useCallback, useEffect, useReducer, useState } from "react";
 import styled from "styled-components";
 import SplitPane from "react-split-pane";
 import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
-import { Canvas } from "penrose-web";
+import { Canvas, Packets, PenroseState, Protocol } from "penrose-web";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -33,11 +33,36 @@ const StartButton = styled.div<{}>`
   border-radius: 50%;
 `;
 
+const socketAddress =
+  process.env.NODE_ENV === "production"
+    ? "wss://build-api.penrose.ink:8443"
+    : "ws://127.0.0.1:9160";
+
 function App() {
   const [state, dispatch] = useReducer(reducer, {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
     currentInstance: { sub: "", sty: "", dsl: "", state: null },
   });
+  const [protocol] = useState(
+    new Protocol(socketAddress, [
+      {
+        kind: "editor",
+        onCanvasState: (state: PenroseState) =>
+          dispatch({ kind: "CHANGE_CANVAS_STATE", content: state }),
+        onConnectionStatus: console.log,
+        onError: (err: any) => console.log(err),
+        onVarEnv: console.log,
+        onVersion: console.log,
+      },
+    ])
+  );
+  const compileTrio = useCallback(() => {
+    const { sub, sty, dsl } = state.currentInstance;
+    protocol.sendPacket(Packets.CompileTrio(sub, sty, dsl));
+  }, [state, protocol]);
+  useEffect(() => {
+    protocol.setupSockets();
+  }, [protocol]);
   const openKeys = Object.entries(state.openPanes)
     .filter(([name, isOpen]: any) => isOpen)
     .map(([name, isOpen]: any) => name);
@@ -92,7 +117,7 @@ function App() {
           </TabButton>
         </div>
         <div>
-          <StartButton>{">"}</StartButton>
+          <StartButton onClick={compileTrio}>{">"}</StartButton>
         </div>
       </nav>
       <div style={{ flexGrow: 1 }}>
