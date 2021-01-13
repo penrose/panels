@@ -3,6 +3,7 @@ import styled from "styled-components";
 import SplitPane from "react-split-pane";
 import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
+import { Canvas } from "penrose-web";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -18,9 +19,24 @@ const TabButton = styled.a<{ open: boolean }>`
   user-select: none;
 `;
 
+const StartButton = styled.div<{}>`
+  outline: none;
+  cursor: pointer;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+  height: 40px;
+  width: 40px;
+  color: #ffffff;
+  line-height: 40px;
+  background-color: green;
+  border-radius: 50%;
+`;
+
 function App() {
   const [state, dispatch] = useReducer(reducer, {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
+    currentInstance: { sub: "", sty: "", dsl: "", state: null },
   });
   const openKeys = Object.entries(state.openPanes)
     .filter(([name, isOpen]: any) => isOpen)
@@ -38,56 +54,83 @@ function App() {
       <nav
         style={{
           display: "flex",
-          justifyContent: "center",
           width: "100%",
           backgroundColor: "#F4F4F4",
+          justifyContent: "space-between",
         }}
       >
-        <TabButton
-          role="button"
-          open={state.openPanes.sub}
-          style={{ borderRadius: "5px 0px 0px 5px" }}
-          onClick={() => dispatch({ kind: "TOGGLE_SUB_PANE" })}
-        >
-          sub
-        </TabButton>
-        <TabButton
-          role="button"
-          open={state.openPanes.sty}
-          onClick={() => dispatch({ kind: "TOGGLE_STY_PANE" })}
-        >
-          sty
-        </TabButton>
-        <TabButton
-          role="button"
-          open={state.openPanes.dsl}
-          onClick={() => dispatch({ kind: "TOGGLE_DSL_PANE" })}
-        >
-          dsl
-        </TabButton>
-        <TabButton
-          role="button"
-          open={state.openPanes.preview}
-          style={{ borderRadius: "0px 5px 5px 0px" }}
-          onClick={() => dispatch({ kind: "TOGGLE_PREVIEW_PANE" })}
-        >
-          👁️
-        </TabButton>
+        <div style={{ alignSelf: "center" }}>
+          <TabButton
+            role="button"
+            open={state.openPanes.sub}
+            style={{ borderRadius: "5px 0px 0px 5px" }}
+            onClick={() => dispatch({ kind: "TOGGLE_SUB_PANE" })}
+          >
+            sub
+          </TabButton>
+          <TabButton
+            role="button"
+            open={state.openPanes.sty}
+            onClick={() => dispatch({ kind: "TOGGLE_STY_PANE" })}
+          >
+            sty
+          </TabButton>
+          <TabButton
+            role="button"
+            open={state.openPanes.dsl}
+            onClick={() => dispatch({ kind: "TOGGLE_DSL_PANE" })}
+          >
+            dsl
+          </TabButton>
+          <TabButton
+            role="button"
+            open={state.openPanes.preview}
+            style={{ borderRadius: "0px 5px 5px 0px" }}
+            onClick={() => dispatch({ kind: "TOGGLE_PREVIEW_PANE" })}
+          >
+            👁️
+          </TabButton>
+        </div>
+        <div>
+          <StartButton>{">"}</StartButton>
+        </div>
       </nav>
       <div style={{ flexGrow: 1 }}>
         {openKeys.reduce((child: any, paneName: any, index: number): any => {
           // I am so sorry. This is because <SplitPane> only supports nested
+          // TODO: just do constant width
 
           let el;
           switch (paneName) {
             case "sub":
-              el = <MonacoEditor />;
+              el = (
+                <MonacoEditor
+                  value={state.currentInstance.sub}
+                  onChange={(content) =>
+                    dispatch({ kind: "CHANGE_SUB", content })
+                  }
+                />
+              );
               break;
             case "sty":
-              el = <MonacoEditor />;
+              el = (
+                <MonacoEditor
+                  value={state.currentInstance.sty}
+                  onChange={(content) =>
+                    dispatch({ kind: "CHANGE_STY", content })
+                  }
+                />
+              );
               break;
             case "dsl":
-              el = <MonacoEditor />;
+              el = (
+                <MonacoEditor
+                  value={state.currentInstance.dsl}
+                  onChange={(content) =>
+                    dispatch({ kind: "CHANGE_DSL", content })
+                  }
+                />
+              );
               break;
             case "preview":
               el = (
@@ -95,13 +138,15 @@ function App() {
                   style={{
                     width: "100%",
                     height: "100%",
-                    backgroundColor: "blue",
+                    backgroundColor: "#f4f4f4",
                   }}
-                />
+                >
+                  <Canvas data={state.currentInstance.state} />
+                </div>
               );
               break;
             default:
-              console.error("wat");
+              console.error("error");
           }
           if (index === 0) {
             return el;
