@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useReducer, useState } from "react";
 import styled from "styled-components";
-import SplitPane from "react-split-pane";
 import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
 import { Canvas, Packets, PenroseState, Protocol } from "penrose-web";
@@ -33,10 +32,20 @@ const StartButton = styled.div<{}>`
   border-radius: 50%;
 `;
 
+const ColumnContainer = styled.div<{ show: boolean }>`
+  display: ${({ show }: any) => (show ? "inline-block" : "none")};
+  border-left: 1px solid gray;
+  flex: 1;
+`;
+
 const socketAddress =
   process.env.NODE_ENV === "production"
     ? "wss://build-api.penrose.ink:8443"
     : "ws://127.0.0.1:9160";
+
+const monacoOptions = {
+  automaticLayout: true,
+};
 
 function App() {
   const [state, dispatch] = useReducer(reducer, {
@@ -63,9 +72,7 @@ function App() {
   useEffect(() => {
     protocol.setupSockets();
   }, [protocol]);
-  const openKeys = Object.entries(state.openPanes)
-    .filter(([name, isOpen]: any) => isOpen)
-    .map(([name, isOpen]: any) => name);
+
   return (
     <div
       className="App"
@@ -120,74 +127,47 @@ function App() {
           <StartButton onClick={compileTrio}>{">"}</StartButton>
         </div>
       </nav>
-      <div style={{ flexGrow: 1 }}>
-        {openKeys.reduce((child: any, paneName: any, index: number): any => {
-          // I am so sorry. This is because <SplitPane> only supports nested
-          // TODO: just do constant width
-
-          let el;
-          switch (paneName) {
-            case "sub":
-              el = (
-                <MonacoEditor
-                  value={state.currentInstance.sub}
-                  onChange={(content) =>
-                    dispatch({ kind: "CHANGE_SUB", content })
-                  }
-                />
-              );
-              break;
-            case "sty":
-              el = (
-                <MonacoEditor
-                  value={state.currentInstance.sty}
-                  onChange={(content) =>
-                    dispatch({ kind: "CHANGE_STY", content })
-                  }
-                />
-              );
-              break;
-            case "dsl":
-              el = (
-                <MonacoEditor
-                  value={state.currentInstance.dsl}
-                  onChange={(content) =>
-                    dispatch({ kind: "CHANGE_DSL", content })
-                  }
-                />
-              );
-              break;
-            case "preview":
-              el = (
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    backgroundColor: "#f4f4f4",
-                  }}
-                >
-                  <Canvas data={state.currentInstance.state} />
-                </div>
-              );
-              break;
-            default:
-              console.error("error");
-          }
-          if (index === 0) {
-            return el;
-          }
-          return (
-            <SplitPane
-              split="vertical"
-              size={`${100 / openKeys.length}%`}
-              minSize={100}
+      <div style={{ display: "flex", flexGrow: 1, flexDirection: "column" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            height: "100%",
+          }}
+        >
+          <ColumnContainer show={state.openPanes.sub}>
+            <MonacoEditor
+              value={state.currentInstance.sub}
+              onChange={(content) => dispatch({ kind: "CHANGE_SUB", content })}
+              options={monacoOptions}
+            />
+          </ColumnContainer>
+          <ColumnContainer show={state.openPanes.sty}>
+            <MonacoEditor
+              value={state.currentInstance.sty}
+              onChange={(content) => dispatch({ kind: "CHANGE_STY", content })}
+              options={monacoOptions}
+            />
+          </ColumnContainer>
+          <ColumnContainer show={state.openPanes.dsl}>
+            <MonacoEditor
+              value={state.currentInstance.dsl}
+              onChange={(content) => dispatch({ kind: "CHANGE_DSL", content })}
+              options={monacoOptions}
+            />
+          </ColumnContainer>
+          <ColumnContainer show={state.openPanes.preview}>
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#f4f4f4",
+              }}
             >
-              {el}
-              {child}
-            </SplitPane>
-          );
-        }, <div />)}
-        {openKeys.length === 0 && <span>none open</span>}
+              <Canvas data={state.currentInstance.state} />
+            </div>
+          </ColumnContainer>
+        </div>
       </div>
     </div>
   );
