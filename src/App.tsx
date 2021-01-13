@@ -32,7 +32,7 @@ const StartButton = styled.div<{}>`
   border-radius: 50%;
 `;
 
-const ColumnContainer = styled.div<{ show: boolean }>`
+const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   display: ${({ show }: any) => (show ? "inline-block" : "none")};
   border-left: 1px solid gray;
   flex: 1;
@@ -72,6 +72,8 @@ function App() {
   useEffect(() => {
     protocol.setupSockets();
   }, [protocol]);
+
+  const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
   return (
     <div
@@ -135,28 +137,31 @@ function App() {
             height: "100%",
           }}
         >
-          <ColumnContainer show={state.openPanes.sub}>
+          <ColumnContainer show={state.openPanes.sub} numOpen={numOpen}>
             <MonacoEditor
               value={state.currentInstance.sub}
               onChange={(content) => dispatch({ kind: "CHANGE_SUB", content })}
+              width={`${window.innerWidth / numOpen}px`}
               options={monacoOptions}
             />
           </ColumnContainer>
-          <ColumnContainer show={state.openPanes.sty}>
+          <ColumnContainer show={state.openPanes.sty} numOpen={numOpen}>
             <MonacoEditor
               value={state.currentInstance.sty}
+              width={`${window.innerWidth / numOpen}px`}
               onChange={(content) => dispatch({ kind: "CHANGE_STY", content })}
               options={monacoOptions}
             />
           </ColumnContainer>
-          <ColumnContainer show={state.openPanes.dsl}>
+          <ColumnContainer show={state.openPanes.dsl} numOpen={numOpen}>
             <MonacoEditor
               value={state.currentInstance.dsl}
               onChange={(content) => dispatch({ kind: "CHANGE_DSL", content })}
+              width={`${window.innerWidth / numOpen}px`}
               options={monacoOptions}
             />
           </ColumnContainer>
-          <ColumnContainer show={state.openPanes.preview}>
+          <ColumnContainer show={state.openPanes.preview} numOpen={numOpen}>
             <div
               style={{
                 width: "100%",
