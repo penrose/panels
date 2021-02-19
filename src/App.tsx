@@ -13,9 +13,12 @@ import {
   PenroseState,
   prepareState,
   RenderInteractive,
+  RenderStatic,
+  resample,
   stepUntilConvergence,
 } from "@penrose/core";
 import dummyRegistry from "./dummy-registry.json";
+import { DownloadSVG } from "./Util";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -38,13 +41,21 @@ const StartButton = styled.div<{}>`
   vertical-align: middle;
   user-select: none;
   color: #ffffff;
-  line-height: 40px;
-  background-color: green;
-  border-radius: 5px;
+  background-color: #40b4f7;
+  padding: 0.25em 0.3em 0.25em 0.3em;
+  margin: 0 0.3em 0 0.3em;
+  user-select: none;
+  border-radius: 6px;
+  transition: 0.2s;
+  :hover {
+    background-color: #049cdd;
+    transition: 0.2s;
+  }
 `;
 
 const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   display: ${({ show }: any) => (show ? "inline-block" : "none")};
+  position: relative;
   border-left: 1px solid gray;
   flex: 1;
 `;
@@ -114,6 +125,21 @@ function App() {
     }
   }, [state, convergeRenderState]);
 
+  const onResample = useCallback(() => {
+    const NUM_SAMPLES = 1;
+    if (state.currentInstance.state) {
+      const resampled = resample(state.currentInstance.state, NUM_SAMPLES);
+      convergeRenderState(resampled);
+    }
+  }, [state, convergeRenderState]);
+
+  const svg = useCallback(() => {
+    if (state.currentInstance.state) {
+      const rendered = RenderStatic(state.currentInstance.state);
+      DownloadSVG(rendered);
+    }
+  }, [state]);
+
   const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
   return (
@@ -133,6 +159,8 @@ function App() {
           backgroundColor: "#F4F4F4",
           justifyContent: "space-between",
           alignItems: "center",
+          padding: "10px",
+          boxSizing: "border-box",
         }}
       >
         <div>penrose!!</div>
@@ -205,6 +233,17 @@ function App() {
             />
           </ColumnContainer>
           <ColumnContainer show={state.openPanes.preview} numOpen={numOpen}>
+            <div
+              style={{
+                position: "absolute",
+                padding: "1em",
+                right: 0,
+                display: "flex",
+              }}
+            >
+              <StartButton onClick={onResample}>resample</StartButton>
+              <StartButton onClick={svg}>SVG</StartButton>
+            </div>
             <div
               style={{
                 width: "100%",
