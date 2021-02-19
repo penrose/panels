@@ -132,9 +132,11 @@ function App() {
           width: "100%",
           backgroundColor: "#F4F4F4",
           justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <div style={{ alignSelf: "center" }}>
+        <div>penrose!!</div>
+        <div style={{}}>
           <TabButton
             role="button"
             open={state.openPanes.sub}
@@ -166,7 +168,7 @@ function App() {
             👁️
           </TabButton>
         </div>
-        <div>
+        <div style={{}}>
           <StartButton onClick={compile}>{"compile"}</StartButton>
         </div>
       </nav>
