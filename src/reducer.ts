@@ -1,4 +1,4 @@
-import { PenroseState } from "penrose-web";
+import { PenroseState } from "@penrose/core";
 
 export interface PaneState {
   sub: boolean;
@@ -12,6 +12,7 @@ export interface CurrentInstance {
   sty: string;
   dsl: string;
   state: PenroseState | null;
+  err: string | null;
 }
 
 export interface State {
@@ -27,7 +28,8 @@ export type Action =
   | { kind: "CHANGE_SUB"; content: string }
   | { kind: "CHANGE_STY"; content: string }
   | { kind: "CHANGE_DSL"; content: string }
-  | { kind: "CHANGE_CANVAS_STATE"; content: PenroseState | null };
+  | { kind: "CHANGE_CANVAS_STATE"; content: PenroseState | null }
+  | { kind: "CHANGE_ERROR"; content: string | null };
 
 const reducer = (state: State, action: Action): State => {
   switch (action.kind) {
@@ -70,6 +72,11 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         currentInstance: { ...state.currentInstance, state: action.content },
+      };
+    case "CHANGE_ERROR":
+      return {
+        ...state,
+        currentInstance: { ...state.currentInstance, err: action.content },
       };
   }
 };

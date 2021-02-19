@@ -1,8 +1,20 @@
-import React, { useCallback, useEffect, useReducer, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import styled from "styled-components";
 import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
-import { Canvas, Packets, PenroseState, Protocol } from "penrose-web";
+import {
+  compileTrio,
+  prepareState,
+  RenderInteractive,
+  stepUntilConvergence,
+} from "@penrose/core";
+import dummyRegistry from "./dummy-registry.json";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -24,12 +36,10 @@ const StartButton = styled.div<{}>`
   text-align: center;
   vertical-align: middle;
   user-select: none;
-  height: 40px;
-  width: 40px;
   color: #ffffff;
   line-height: 40px;
   background-color: green;
-  border-radius: 50%;
+  border-radius: 5px;
 `;
 
 const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
@@ -38,40 +48,62 @@ const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   flex: 1;
 `;
 
-const socketAddress =
-  process.env.NODE_ENV === "production"
-    ? "wss://build-api.penrose.ink:8443"
-    : "ws://127.0.0.1:9160";
-
 const monacoOptions = {
   automaticLayout: true,
+  minimap: { enabled: false },
 };
 
 function App() {
   const [state, dispatch] = useReducer(reducer, {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
-    currentInstance: { sub: "", sty: "", dsl: "", state: null },
+    currentInstance: { sub: "", sty: "", dsl: "", state: null, err: null },
   });
-  const [protocol] = useState(
-    new Protocol(socketAddress, [
-      {
-        kind: "editor",
-        onCanvasState: (state: PenroseState) =>
-          dispatch({ kind: "CHANGE_CANVAS_STATE", content: state }),
-        onConnectionStatus: console.log,
-        onError: (err: any) => console.log(err),
-        onVarEnv: console.log,
-        onVersion: console.log,
-      },
-    ])
-  );
-  const compileTrio = useCallback(() => {
-    const { sub, sty, dsl } = state.currentInstance;
-    protocol.sendPacket(Packets.CompileTrio(sub, sty, dsl));
-  }, [state, protocol]);
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    protocol.setupSockets();
-  }, [protocol]);
+    (async () => {
+      const domainReq = await fetch(
+        `${dummyRegistry.root}${dummyRegistry.domains["set-theory"].URI}`
+      );
+      const domain = await domainReq.text();
+      dispatch({ kind: "CHANGE_DSL", content: domain });
+      const styReq = await fetch(
+        `${dummyRegistry.root}${dummyRegistry.styles["venn"].URI}`
+      );
+      const sty = await styReq.text();
+      dispatch({ kind: "CHANGE_STY", content: sty });
+      const subReq = await fetch(
+        `${dummyRegistry.root}${dummyRegistry.substances["nested"].URI}`
+      );
+      const sub = await subReq.text();
+      dispatch({ kind: "CHANGE_SUB", content: sub });
+    })();
+  }, [dispatch]);
+
+  const compile = useCallback(() => {
+    const { sub, sty, dsl } = state.currentInstance;
+    const compileRes = compileTrio(dsl, sub, sty);
+    if (compileRes.isOk()) {
+      (async () => {
+        const initState = await prepareState(compileRes);
+        dispatch({ kind: "CHANGE_CANVAS_STATE", content: initState });
+        const convergedState = stepUntilConvergence(initState);
+        dispatch({ kind: "CHANGE_CANVAS_STATE", content: convergedState });
+        const cur = canvasRef.current;
+        const rendered = RenderInteractive(convergedState, console.log);
+        if (cur) {
+          if (cur.firstChild) {
+            cur.replaceChild(rendered, cur.firstChild);
+          } else {
+            cur.appendChild(rendered);
+          }
+        }
+      })();
+    } else {
+      dispatch({ kind: "CHANGE_ERROR", content: compileRes.error });
+    }
+  }, [canvasRef, state]);
 
   const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
@@ -126,7 +158,7 @@ function App() {
           </TabButton>
         </div>
         <div>
-          <StartButton onClick={compileTrio}>{">"}</StartButton>
+          <StartButton onClick={compile}>{"compile"}</StartButton>
         </div>
       </nav>
       <div style={{ display: "flex", flexGrow: 1, flexDirection: "column" }}>
@@ -168,9 +200,13 @@ function App() {
                 height: "100%",
                 backgroundColor: "#f4f4f4",
               }}
-            >
-              <Canvas data={state.currentInstance.state} />
-            </div>
+              ref={canvasRef}
+            />
+            {state.currentInstance.err && (
+              <div style={{ position: "absolute", bottom: 0 }}>
+                {JSON.stringify(state.currentInstance.err)}
+              </div>
+            )}
           </ColumnContainer>
         </div>
       </div>
