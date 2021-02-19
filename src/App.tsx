@@ -104,6 +104,7 @@ function App() {
     const { sub, sty, dsl } = state.currentInstance;
     const compileRes = compileTrio(dsl, sub, sty);
     if (compileRes.isOk()) {
+      dispatch({ kind: "CHANGE_ERROR", content: null });
       (async () => {
         const initState = await prepareState(compileRes.value);
         convergeRenderState(initState);
