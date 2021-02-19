@@ -86,9 +86,13 @@ function App() {
     const compileRes = compileTrio(dsl, sub, sty);
     if (compileRes.isOk()) {
       (async () => {
-        const initState = await prepareState(compileRes);
+        console.log("pre state");
+        const initState = await prepareState(compileRes.value);
+        console.log("inited state");
         dispatch({ kind: "CHANGE_CANVAS_STATE", content: initState });
+        console.log("pre step");
         const convergedState = stepUntilConvergence(initState);
+        console.log("convorged");
         dispatch({ kind: "CHANGE_CANVAS_STATE", content: convergedState });
         const cur = canvasRef.current;
         const rendered = RenderInteractive(convergedState, console.log);
