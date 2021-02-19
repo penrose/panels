@@ -10,6 +10,7 @@ import MonacoEditor from "react-monaco-editor";
 import reducer from "./reducer";
 import {
   compileTrio,
+  PenroseState,
   prepareState,
   RenderInteractive,
   stepUntilConvergence,
@@ -81,33 +82,36 @@ function App() {
     })();
   }, [dispatch]);
 
+  const convergeRenderState = useCallback(
+    (state: PenroseState) => {
+      dispatch({ kind: "CHANGE_CANVAS_STATE", content: state });
+      const convergedState = stepUntilConvergence(state);
+      dispatch({ kind: "CHANGE_CANVAS_STATE", content: convergedState });
+      const cur = canvasRef.current;
+      const rendered = RenderInteractive(convergedState, convergeRenderState);
+      if (cur) {
+        if (cur.firstChild) {
+          cur.replaceChild(rendered, cur.firstChild);
+        } else {
+          cur.appendChild(rendered);
+        }
+      }
+    },
+    [dispatch, canvasRef]
+  );
+
   const compile = useCallback(() => {
     const { sub, sty, dsl } = state.currentInstance;
     const compileRes = compileTrio(dsl, sub, sty);
     if (compileRes.isOk()) {
       (async () => {
-        console.log("pre state");
         const initState = await prepareState(compileRes.value);
-        console.log("inited state");
-        dispatch({ kind: "CHANGE_CANVAS_STATE", content: initState });
-        console.log("pre step");
-        const convergedState = stepUntilConvergence(initState);
-        console.log("convorged");
-        dispatch({ kind: "CHANGE_CANVAS_STATE", content: convergedState });
-        const cur = canvasRef.current;
-        const rendered = RenderInteractive(convergedState, console.log);
-        if (cur) {
-          if (cur.firstChild) {
-            cur.replaceChild(rendered, cur.firstChild);
-          } else {
-            cur.appendChild(rendered);
-          }
-        }
+        convergeRenderState(initState);
       })();
     } else {
       dispatch({ kind: "CHANGE_ERROR", content: compileRes.error });
     }
-  }, [canvasRef, state]);
+  }, [state, convergeRenderState]);
 
   const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
