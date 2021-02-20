@@ -1,12 +1,6 @@
-import React, {
-  useCallback,
-  useEffect,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useReducer, useRef } from "react";
 import styled from "styled-components";
-import MonacoEditor from "react-monaco-editor";
+import MonacoEditor, { monaco } from "react-monaco-editor";
 import reducer from "./reducer";
 import {
   compileTrio,
@@ -15,10 +9,10 @@ import {
   RenderInteractive,
   RenderStatic,
   resample,
+  showError,
   stepUntilConvergence,
 } from "@penrose/core";
-import dummyRegistry from "./dummy-registry.json";
-import { DownloadSVG } from "./Util";
+import { DownloadSVG, useFetchTrioPreset } from "./Util";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -60,9 +54,10 @@ const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   flex: 1;
 `;
 
-const monacoOptions = {
+const monacoOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
   automaticLayout: true,
   minimap: { enabled: false },
+  wordWrap: "on",
 };
 
 function App() {
@@ -72,26 +67,6 @@ function App() {
   });
 
   const canvasRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    (async () => {
-      const domainReq = await fetch(
-        `${dummyRegistry.root}${dummyRegistry.domains["set-theory"].URI}`
-      );
-      const domain = await domainReq.text();
-      dispatch({ kind: "CHANGE_DSL", content: domain });
-      const styReq = await fetch(
-        `${dummyRegistry.root}${dummyRegistry.styles["venn"].URI}`
-      );
-      const sty = await styReq.text();
-      dispatch({ kind: "CHANGE_STY", content: sty });
-      const subReq = await fetch(
-        `${dummyRegistry.root}${dummyRegistry.substances["nested"].URI}`
-      );
-      const sub = await subReq.text();
-      dispatch({ kind: "CHANGE_SUB", content: sub });
-    })();
-  }, [dispatch]);
 
   const convergeRenderState = useCallback(
     (state: PenroseState) => {
@@ -139,6 +114,8 @@ function App() {
       DownloadSVG(rendered);
     }
   }, [state]);
+
+  useFetchTrioPreset(dispatch);
 
   const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
@@ -253,8 +230,19 @@ function App() {
               ref={canvasRef}
             />
             {state.currentInstance.err && (
-              <div style={{ position: "absolute", bottom: 0 }}>
-                {JSON.stringify(state.currentInstance.err)}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  backgroundColor: "#ffdada",
+                  maxHeight: "400px",
+                  maxWidth: "100%",
+                  overflow: "auto",
+                  padding: "10px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <pre>{showError(state.currentInstance.err).toString()}</pre>
               </div>
             )}
           </ColumnContainer>
