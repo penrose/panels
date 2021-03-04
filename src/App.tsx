@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useReducer, useRef } from "react";
 import styled from "styled-components";
-import MonacoEditor, { monaco } from "react-monaco-editor";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
+import MonacoEditor from "@monaco-editor/react";
+import { editor } from "monaco-editor";
 import "react-toastify/dist/ReactToastify.css";
 import reducer, { debouncedSave, initialState } from "./reducer";
 import {
@@ -40,7 +41,7 @@ const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   flex: 1;
 `;
 
-const monacoOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
+const monacoOptions: editor.IStandaloneEditorConstructionOptions = {
   automaticLayout: true,
   minimap: { enabled: false },
   wordWrap: "on",
@@ -213,7 +214,11 @@ function App({ location }: any) {
             <MonacoEditor
               value={state.currentInstance.sub}
               onChange={(content) =>
-                dispatch({ kind: "CHANGE_CODE", lang: "sub", content })
+                dispatch({
+                  kind: "CHANGE_CODE",
+                  lang: "sub",
+                  content: content as string,
+                })
               }
               width={`${window.innerWidth / numOpen}px`}
               options={monacoOptions}
@@ -224,7 +229,11 @@ function App({ location }: any) {
               value={state.currentInstance.sty}
               width={`${window.innerWidth / numOpen}px`}
               onChange={(content) =>
-                dispatch({ kind: "CHANGE_CODE", lang: "sty", content })
+                dispatch({
+                  kind: "CHANGE_CODE",
+                  lang: "sty",
+                  content: content as string,
+                })
               }
               options={monacoOptions}
             />
@@ -233,7 +242,11 @@ function App({ location }: any) {
             <MonacoEditor
               value={state.currentInstance.dsl}
               onChange={(content) =>
-                dispatch({ kind: "CHANGE_CODE", lang: "dsl", content })
+                dispatch({
+                  kind: "CHANGE_CODE",
+                  lang: "dsl",
+                  content: content as string,
+                })
               }
               width={`${window.innerWidth / numOpen}px`}
               options={monacoOptions}

@@ -1,5 +1,5 @@
 import { PenroseError, PenroseState } from "@penrose/core";
-import { debounce } from "lodash";
+import { cloneDeep, debounce } from "lodash";
 
 export interface PaneState {
   sub: boolean;
@@ -68,9 +68,11 @@ export const debouncedSave = debounce((state: State) => {
     // don't save if already gist
     return;
   }
-  const stateWithoutCircular = { ...state };
-  delete stateWithoutCircular.currentInstance.state;
-  window.localStorage.setItem("state", JSON.stringify(stateWithoutCircular));
+  const modifiedState = cloneDeep(state);
+  delete modifiedState.currentInstance.state;
+  modifiedState.currentInstance.err = null;
+
+  window.localStorage.setItem("state", JSON.stringify(modifiedState));
 }, 250);
 
 export type Action =
