@@ -1,13 +1,17 @@
 import { useCallback, useState } from "react";
-import { AuthorshipInfo } from "../reducer";
+import { AuthorshipInfo, GithubUser } from "../reducer";
 import BlueButton from "./BlueButton";
 
 const AuthorshipTitle = ({
   authorship,
   onChangeTitle,
+  myUser,
+  onPublish,
 }: {
   authorship: AuthorshipInfo;
   onChangeTitle(name: string): void;
+  myUser: GithubUser | null;
+  onPublish(): void;
 }) => {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(authorship.name);
@@ -51,8 +55,13 @@ const AuthorshipTitle = ({
       {" - "}
       <span style={{ color: "#7d7d7d" }}>
         {authorship.madeBy ?? "anonymous"}
+        {authorship.gistID === null &&
+          (myUser === null ? (
+            <BlueButton onClick={onSignIn}>sign in</BlueButton>
+          ) : (
+            <BlueButton onClick={onPublish}>publish</BlueButton>
+          ))}
       </span>
-      <BlueButton onClick={onSignIn}>sign in</BlueButton>
     </div>
   );
 };

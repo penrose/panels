@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useReducer, useRef } from "react";
 import styled from "styled-components";
 import MonacoEditor, { monaco } from "react-monaco-editor";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import reducer, { debouncedSave, initialState } from "./reducer";
 import {
   compileTrio,
@@ -12,9 +14,10 @@ import {
   showError,
   stepUntilConvergence,
 } from "@penrose/core";
-import { DownloadSVG } from "./Util";
+import { DownloadSVG, retrieveGist, usePublishGist } from "./Util";
 import AuthorshipTitle from "./components/AuthorshipTitle";
 import BlueButton from "./components/BlueButton";
+import { useParams } from "react-router-dom";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -43,12 +46,36 @@ const monacoOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
   wordWrap: "on",
 };
 
-function App() {
+function App({ location }: any) {
   const [state, dispatch] = useReducer(reducer, null, initialState);
 
   useEffect(() => {
     debouncedSave(state);
   }, [state]);
+  const urlParams = useParams() as any;
+  useEffect(() => {
+    if (urlParams.gistId) {
+      retrieveGist(urlParams.gistId, dispatch);
+    }
+  }, [urlParams, dispatch]);
+  useEffect(() => {
+    if (location.state && location.state.authed) {
+      const params = new URLSearchParams(location.state.params);
+      const username = params.get("profile[login]");
+      const access_token = params.get("access_token");
+      const avatar = params.get("profile[avatar_url]");
+      if (username !== null && access_token !== null && avatar !== null) {
+        dispatch({
+          kind: "CHANGE_GH_USER",
+          user: {
+            username,
+            access_token,
+            avatar,
+          },
+        });
+      }
+    }
+  }, [location, dispatch]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -106,6 +133,8 @@ function App() {
     [dispatch]
   );
 
+  const onPublish = usePublishGist(state, dispatch);
+
   const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
   return (
@@ -118,6 +147,7 @@ function App() {
         flexDirection: "column",
       }}
     >
+      <ToastContainer position="bottom-left" />
       <nav
         style={{
           display: "flex",
@@ -131,6 +161,8 @@ function App() {
       >
         <AuthorshipTitle
           authorship={state.currentInstance.authorship}
+          myUser={state.settings.githubUser}
+          onPublish={onPublish}
           onChangeTitle={onChangeTitle}
         />
         <div style={{}}>
@@ -180,7 +212,9 @@ function App() {
           <ColumnContainer show={state.openPanes.sub} numOpen={numOpen}>
             <MonacoEditor
               value={state.currentInstance.sub}
-              onChange={(content) => dispatch({ kind: "CHANGE_SUB", content })}
+              onChange={(content) =>
+                dispatch({ kind: "CHANGE_CODE", lang: "sub", content })
+              }
               width={`${window.innerWidth / numOpen}px`}
               options={monacoOptions}
             />
@@ -189,14 +223,18 @@ function App() {
             <MonacoEditor
               value={state.currentInstance.sty}
               width={`${window.innerWidth / numOpen}px`}
-              onChange={(content) => dispatch({ kind: "CHANGE_STY", content })}
+              onChange={(content) =>
+                dispatch({ kind: "CHANGE_CODE", lang: "sty", content })
+              }
               options={monacoOptions}
             />
           </ColumnContainer>
           <ColumnContainer show={state.openPanes.dsl} numOpen={numOpen}>
             <MonacoEditor
               value={state.currentInstance.dsl}
-              onChange={(content) => dispatch({ kind: "CHANGE_DSL", content })}
+              onChange={(content) =>
+                dispatch({ kind: "CHANGE_CODE", lang: "dsl", content })
+              }
               width={`${window.innerWidth / numOpen}px`}
               options={monacoOptions}
             />

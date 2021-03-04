@@ -1,4 +1,4 @@
-import { PenroseState } from "@penrose/core";
+import { PenroseError, PenroseState } from "@penrose/core";
 import { debounce } from "lodash";
 
 export interface PaneState {
@@ -12,6 +12,7 @@ export interface AuthorshipInfo {
   name: string;
   madeBy: string | null;
   gistID: string | null;
+  avatar: string | null;
 }
 
 export interface CurrentInstance {
@@ -20,11 +21,15 @@ export interface CurrentInstance {
   sty: string;
   dsl: string;
   state: PenroseState | null;
-  err: string | null;
+  err: PenroseError | null;
 }
-
+export interface GithubUser {
+  username: string;
+  access_token: string;
+  avatar: string;
+}
 export interface ISettings {
-  githubToken: string | null;
+  githubUser: GithubUser | null;
   vimMode: boolean;
 }
 
@@ -36,7 +41,6 @@ export interface State {
 
 export const initialState = (): State => {
   const fromStorage = window.localStorage.getItem("state");
-  console.log("retrieved");
   if (fromStorage !== null) {
     return JSON.parse(fromStorage);
   }
@@ -51,14 +55,19 @@ export const initialState = (): State => {
       authorship: {
         name: "untitled",
         madeBy: null,
+        avatar: null,
         gistID: null,
       },
     },
-    settings: { githubToken: null, vimMode: false },
+    settings: { githubUser: null, vimMode: false },
   };
 };
 
 export const debouncedSave = debounce((state: State) => {
+  if (state.currentInstance.authorship.gistID !== null) {
+    // don't save if already gist
+    return;
+  }
   const stateWithoutCircular = { ...state };
   delete stateWithoutCircular.currentInstance.state;
   window.localStorage.setItem("state", JSON.stringify(stateWithoutCircular));
@@ -69,12 +78,13 @@ export type Action =
   | { kind: "TOGGLE_STY_PANE" }
   | { kind: "TOGGLE_DSL_PANE" }
   | { kind: "TOGGLE_PREVIEW_PANE" }
-  | { kind: "CHANGE_SUB"; content: string }
-  | { kind: "CHANGE_STY"; content: string }
-  | { kind: "CHANGE_DSL"; content: string }
+  | { kind: "CHANGE_CODE"; lang: "sub" | "sty" | "dsl"; content: string }
+  | { kind: "SET_TRIO"; sub: string; sty: string; dsl: string }
+  | { kind: "SET_AUTHORSHIP"; authorship: AuthorshipInfo }
   | { kind: "CHANGE_CANVAS_STATE"; content: PenroseState | null }
-  | { kind: "CHANGE_ERROR"; content: string | null }
-  | { kind: "CHANGE_TITLE"; name: string };
+  | { kind: "CHANGE_ERROR"; content: PenroseError | null }
+  | { kind: "CHANGE_TITLE"; name: string }
+  | { kind: "CHANGE_GH_USER"; user: GithubUser };
 
 const reducer = (state: State, action: Action): State => {
   switch (action.kind) {
@@ -98,20 +108,39 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         openPanes: { ...state.openPanes, sub: !state.openPanes.sub },
       };
-    case "CHANGE_DSL":
+    case "CHANGE_CODE":
       return {
         ...state,
-        currentInstance: { ...state.currentInstance, dsl: action.content },
+        currentInstance: {
+          ...state.currentInstance,
+          [action.lang]: action.content,
+          authorship: {
+            ...state.currentInstance.authorship,
+            madeBy: state.settings.githubUser
+              ? state.settings.githubUser.username
+              : null,
+            // null out so we can save another
+            gistID: null,
+          },
+        },
       };
-    case "CHANGE_STY":
+    case "SET_TRIO":
       return {
         ...state,
-        currentInstance: { ...state.currentInstance, sty: action.content },
+        currentInstance: {
+          ...state.currentInstance,
+          dsl: action.dsl,
+          sub: action.sub,
+          sty: action.sty,
+        },
       };
-    case "CHANGE_SUB":
+    case "SET_AUTHORSHIP":
       return {
         ...state,
-        currentInstance: { ...state.currentInstance, sub: action.content },
+        currentInstance: {
+          ...state.currentInstance,
+          authorship: action.authorship,
+        },
       };
     case "CHANGE_CANVAS_STATE":
       return {
@@ -133,6 +162,11 @@ const reducer = (state: State, action: Action): State => {
             name: action.name,
           },
         },
+      };
+    case "CHANGE_GH_USER":
+      return {
+        ...state,
+        settings: { ...state.settings, githubUser: action.user },
       };
   }
 };
