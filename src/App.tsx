@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useReducer, useRef } from "react";
 import styled from "styled-components";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import MonacoEditor from "@monaco-editor/react";
 import { editor } from "monaco-editor";
 import "react-toastify/dist/ReactToastify.css";
@@ -99,16 +99,23 @@ function App({ location }: any) {
   );
 
   const compile = useCallback(() => {
-    const { sub, sty, dsl } = state.currentInstance;
-    const compileRes = compileTrio(dsl, sub, sty);
-    if (compileRes.isOk()) {
-      dispatch({ kind: "CHANGE_ERROR", content: null });
-      (async () => {
-        const initState = await prepareState(compileRes.value);
-        convergeRenderState(initState);
-      })();
-    } else {
-      dispatch({ kind: "CHANGE_ERROR", content: compileRes.error });
+    try {
+      const { sub, sty, dsl } = state.currentInstance;
+      const compileRes = compileTrio(dsl, sub, sty);
+      if (compileRes.isOk()) {
+        dispatch({ kind: "CHANGE_ERROR", content: null });
+        (async () => {
+          const initState = await prepareState(compileRes.value);
+          convergeRenderState(initState);
+        })();
+      } else {
+        dispatch({ kind: "CHANGE_ERROR", content: compileRes.error });
+      }
+    } catch (err) {
+      toast.error(`Penrose internal error: ${err}. See console for details.`, {
+        autoClose: 10000,
+      });
+      console.error(err);
     }
   }, [state, convergeRenderState]);
 
