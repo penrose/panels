@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Action } from "./reducer";
 import dummyRegistry from "./dummy-registry.json";
 
@@ -23,24 +22,20 @@ export const DownloadSVG = (
   document.body.removeChild(downloadLink);
 };
 
-export const useFetchTrioPreset = (dispatch: React.Dispatch<Action>) => {
-  useEffect(() => {
-    (async () => {
-      const domainReq = await fetch(
-        `${dummyRegistry.root}${dummyRegistry.domains["set-theory"].URI}`
-      );
-      const domain = await domainReq.text();
-      dispatch({ kind: "CHANGE_DSL", content: domain });
-      const styReq = await fetch(
-        `${dummyRegistry.root}${dummyRegistry.styles["venn"].URI}`
-      );
-      const sty = await styReq.text();
-      dispatch({ kind: "CHANGE_STY", content: sty });
-      const subReq = await fetch(
-        `${dummyRegistry.root}${dummyRegistry.substances["nested"].URI}`
-      );
-      const sub = await subReq.text();
-      dispatch({ kind: "CHANGE_SUB", content: sub });
-    })();
-  }, [dispatch]);
+export const fetchTrioPreset = async (dispatch: React.Dispatch<Action>) => {
+  const domainReq = await fetch(
+    `${dummyRegistry.root}${dummyRegistry.domains["set-theory"].URI}`
+  );
+  const domain = await domainReq.text();
+  dispatch({ kind: "CHANGE_DSL", content: domain });
+  const styReq = await fetch(
+    `${dummyRegistry.root}${dummyRegistry.styles["venn"].URI}`
+  );
+  const sty = await styReq.text();
+  dispatch({ kind: "CHANGE_STY", content: sty });
+  const subReq = await fetch(
+    `${dummyRegistry.root}${dummyRegistry.substances["nested"].URI}`
+  );
+  const sub = await subReq.text();
+  dispatch({ kind: "CHANGE_SUB", content: sub });
 };

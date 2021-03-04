@@ -1,7 +1,7 @@
-import React, { useCallback, useReducer, useRef } from "react";
+import React, { useCallback, useEffect, useReducer, useRef } from "react";
 import styled from "styled-components";
 import MonacoEditor, { monaco } from "react-monaco-editor";
-import reducer from "./reducer";
+import reducer, { debouncedSave, initialState } from "./reducer";
 import {
   compileTrio,
   PenroseState,
@@ -12,7 +12,9 @@ import {
   showError,
   stepUntilConvergence,
 } from "@penrose/core";
-import { DownloadSVG, useFetchTrioPreset } from "./Util";
+import { DownloadSVG } from "./Util";
+import AuthorshipTitle from "./components/AuthorshipTitle";
+import BlueButton from "./components/BlueButton";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -26,25 +28,6 @@ const TabButton = styled.a<{ open: boolean }>`
   text-align: center;
   vertical-align: middle;
   user-select: none;
-`;
-
-const StartButton = styled.div<{}>`
-  outline: none;
-  cursor: pointer;
-  text-align: center;
-  vertical-align: middle;
-  user-select: none;
-  color: #ffffff;
-  background-color: #40b4f7;
-  padding: 0.25em 0.3em 0.25em 0.3em;
-  margin: 0 0.3em 0 0.3em;
-  user-select: none;
-  border-radius: 6px;
-  transition: 0.2s;
-  :hover {
-    background-color: #049cdd;
-    transition: 0.2s;
-  }
 `;
 
 const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
@@ -61,10 +44,11 @@ const monacoOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
 };
 
 function App() {
-  const [state, dispatch] = useReducer(reducer, {
-    openPanes: { sub: true, sty: false, dsl: false, preview: true },
-    currentInstance: { sub: "", sty: "", dsl: "", state: null, err: null },
-  });
+  const [state, dispatch] = useReducer(reducer, null, initialState);
+
+  useEffect(() => {
+    debouncedSave(state);
+  }, [state]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -115,7 +99,12 @@ function App() {
     }
   }, [state]);
 
-  useFetchTrioPreset(dispatch);
+  const onChangeTitle = useCallback(
+    (name: string) => {
+      dispatch({ kind: "CHANGE_TITLE", name });
+    },
+    [dispatch]
+  );
 
   const numOpen = Object.values(state.openPanes).filter((open) => open).length;
 
@@ -140,7 +129,10 @@ function App() {
           boxSizing: "border-box",
         }}
       >
-        <div>penrose!!</div>
+        <AuthorshipTitle
+          authorship={state.currentInstance.authorship}
+          onChangeTitle={onChangeTitle}
+        />
         <div style={{}}>
           <TabButton
             role="button"
@@ -174,7 +166,7 @@ function App() {
           </TabButton>
         </div>
         <div style={{}}>
-          <StartButton onClick={compile}>{"compile"}</StartButton>
+          <BlueButton onClick={compile}>{"compile"}</BlueButton>
         </div>
       </nav>
       <div style={{ display: "flex", flexGrow: 1, flexDirection: "column" }}>
@@ -218,8 +210,8 @@ function App() {
                 display: "flex",
               }}
             >
-              <StartButton onClick={onResample}>resample</StartButton>
-              <StartButton onClick={svg}>SVG</StartButton>
+              <BlueButton onClick={onResample}>resample</BlueButton>
+              <BlueButton onClick={svg}>SVG</BlueButton>
             </div>
             <div
               style={{
