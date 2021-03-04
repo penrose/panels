@@ -255,7 +255,7 @@ function App({ location }: any) {
               style={{
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#f4f4f4",
+                backgroundColor: "#ffffff",
               }}
               ref={canvasRef}
             />
