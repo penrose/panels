@@ -157,9 +157,9 @@ export const StyleLanguageTokens: languages.IMonarchLanguage = {
         {
           cases: {
             "@keywords": "keyword",
-            "@computations": "entity",
-            "@objectives": "entity",
-            "@constraints": "entity",
+            "@computations": "constructor",
+            "@objectives": "constructor",
+            "@constraints": "constructor",
             "@shapes": "tag",
             "@types": "type",
             "@default": "identifier",
@@ -195,7 +195,7 @@ export const StyleCompletions = (range: IRange): languages.CompletionItem[] => [
     label: keyword,
     insertText: `${keyword}($0)`,
     insertTextRules: languages.CompletionItemInsertTextRule.InsertAsSnippet,
-    kind: languages.CompletionItemKind.Function,
+    kind: languages.CompletionItemKind.Method,
     detail: "computation",
     range,
   })),
