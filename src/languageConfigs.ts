@@ -170,6 +170,18 @@ export const StyleLanguageTokens: languages.IMonarchLanguage = {
         /\b[+-]?(?:\d+(?:[.]\d*)?(?:[eE][+-]?\d+)?|[.]\d+(?:[eE][+-]?\d+)?)\b/,
         "number.float",
       ],
+      { include: "@whitespace" },
+    ],
+    comment: [
+      [/[^/*]+/, "comment"],
+      [/\/\*/, "comment", "@push"], // nested comment
+      ["\\*/", "comment", "@pop"],
+      [/[/*]/, "comment"],
+    ],
+    whitespace: [
+      [/[ \t\r\n]+/, "white"],
+      [/\/\*/, "comment", "@comment"],
+      [/--.*?$/, "comment"],
     ],
   },
 };
