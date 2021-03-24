@@ -3,6 +3,7 @@ import dummyRegistry from "./dummy-registry.json";
 import { useCallback } from "react";
 import { Octokit } from "@octokit/rest";
 import { toast } from "react-toastify";
+import { editor } from "monaco-editor";
 
 /**
  * (browser-only) Downloads any given exported SVG to the user's computer
@@ -111,4 +112,10 @@ export const retrieveGist = async (
   } catch (err) {
     toast.error(`Could not retrieve gist ID: ${err.toString()}`);
   }
+};
+
+export const monacoOptions: editor.IStandaloneEditorConstructionOptions = {
+  automaticLayout: true,
+  minimap: { enabled: false },
+  wordWrap: "on",
 };

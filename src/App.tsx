@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import styled from "styled-components";
 import { toast, ToastContainer } from "react-toastify";
 import MonacoEditor from "@monaco-editor/react";
-import { editor } from "monaco-editor";
 import "react-toastify/dist/ReactToastify.css";
 import reducer, { debouncedSave, initialState } from "./reducer";
 import {
@@ -15,10 +14,16 @@ import {
   showError,
   stepUntilConvergence,
 } from "@penrose/core";
-import { DownloadSVG, retrieveGist, usePublishGist } from "./Util";
+import {
+  DownloadSVG,
+  monacoOptions,
+  retrieveGist,
+  usePublishGist,
+} from "./Util";
 import AuthorshipTitle from "./components/AuthorshipTitle";
 import BlueButton from "./components/BlueButton";
 import { useParams } from "react-router-dom";
+import StylePane from "./StylePane";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -40,12 +45,6 @@ const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   border-left: 1px solid gray;
   flex: 1;
 `;
-
-const monacoOptions: editor.IStandaloneEditorConstructionOptions = {
-  automaticLayout: true,
-  minimap: { enabled: false },
-  wordWrap: "on",
-};
 
 function App({ location }: any) {
   const [state, dispatch] = useReducer(reducer, null, initialState);
@@ -232,18 +231,13 @@ function App({ location }: any) {
             />
           </ColumnContainer>
           <ColumnContainer show={state.openPanes.sty} numOpen={numOpen}>
-            <MonacoEditor
-              value={state.currentInstance.sty}
-              width={`${window.innerWidth / numOpen}px`}
-              onChange={(content) =>
-                dispatch({
-                  kind: "CHANGE_CODE",
-                  lang: "sty",
-                  content: content as string,
-                })
-              }
-              options={monacoOptions}
-            />
+            {
+              <StylePane
+                value={state.currentInstance.sty}
+                numOpen={numOpen}
+                dispatch={dispatch}
+              />
+            }
           </ColumnContainer>
           <ColumnContainer show={state.openPanes.dsl} numOpen={numOpen}>
             <MonacoEditor

@@ -1,5 +1,6 @@
 import { PenroseError, PenroseState } from "@penrose/core";
 import { cloneDeep, debounce } from "lodash";
+import React from "react";
 
 export interface PaneState {
   sub: boolean;
@@ -87,6 +88,8 @@ export type Action =
   | { kind: "CHANGE_ERROR"; content: PenroseError | null }
   | { kind: "CHANGE_TITLE"; name: string }
   | { kind: "CHANGE_GH_USER"; user: GithubUser };
+
+export type Dispatcher = React.Dispatch<Action>;
 
 const reducer = (state: State, action: Action): State => {
   switch (action.kind) {
