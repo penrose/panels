@@ -24,7 +24,7 @@ const StylePane = ({
       monaco.languages.register({ id: "style" });
       monaco.languages.setLanguageConfiguration("style", StyleConfig);
       monaco.languages.setMonarchTokensProvider("style", StyleLanguageTokens);
-      monaco.languages.registerCompletionItemProvider("style", {
+      const dispose = monaco.languages.registerCompletionItemProvider("style", {
         provideCompletionItems: (model, position) => {
           const word = model.getWordUntilPosition(position);
           const range: IRange = {
@@ -36,6 +36,9 @@ const StylePane = ({
           return { suggestions: StyleCompletions(range) };
         },
       });
+      return () => {
+        dispose.dispose();
+      };
     }
   }, [monaco]);
   return (

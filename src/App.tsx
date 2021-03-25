@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import styled from "styled-components";
 import { toast, ToastContainer } from "react-toastify";
 import MonacoEditor from "@monaco-editor/react";
 import "react-toastify/dist/ReactToastify.css";
 import reducer, { debouncedSave, initialState } from "./reducer";
 import {
+  compileDomain,
   compileTrio,
   PenroseState,
   prepareState,
@@ -24,6 +25,7 @@ import AuthorshipTitle from "./components/AuthorshipTitle";
 import BlueButton from "./components/BlueButton";
 import { useParams } from "react-router-dom";
 import StylePane from "./StylePane";
+import SubPane from "./SubPane";
 
 const TabButton = styled.a<{ open: boolean }>`
   outline: none;
@@ -48,6 +50,7 @@ const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
 
 function App({ location }: any) {
   const [state, dispatch] = useReducer(reducer, null, initialState);
+  const [domainCache, setDomainCache] = useState(null);
 
   useEffect(() => {
     debouncedSave(state);
@@ -101,6 +104,10 @@ function App({ location }: any) {
     try {
       const { sub, sty, dsl } = state.currentInstance;
       const compileRes = compileTrio(dsl, sub, sty);
+      const domainComp = compileDomain(dsl);
+      if (domainComp.isOk()) {
+        setDomainCache(domainComp.value);
+      }
       if (compileRes.isOk()) {
         dispatch({ kind: "CHANGE_ERROR", content: null });
         (async () => {
@@ -217,18 +224,14 @@ function App({ location }: any) {
           }}
         >
           <ColumnContainer show={state.openPanes.sub} numOpen={numOpen}>
-            <MonacoEditor
-              value={state.currentInstance.sub}
-              onChange={(content) =>
-                dispatch({
-                  kind: "CHANGE_CODE",
-                  lang: "sub",
-                  content: content as string,
-                })
-              }
-              width={`${window.innerWidth / numOpen}px`}
-              options={monacoOptions}
-            />
+            {
+              <SubPane
+                value={state.currentInstance.sub}
+                domainCache={domainCache}
+                numOpen={numOpen}
+                dispatch={dispatch}
+              />
+            }
           </ColumnContainer>
           <ColumnContainer show={state.openPanes.sty} numOpen={numOpen}>
             {
