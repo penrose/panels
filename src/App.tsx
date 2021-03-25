@@ -43,9 +43,9 @@ const TabButton = styled.a<{ open: boolean }>`
 
 const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
   display: ${({ show }: any) => (show ? "inline-block" : "none")};
-  position: relative;
   border-left: 1px solid gray;
   flex: 1;
+  overflow: hidden;
 `;
 
 function App({ location }: any) {
@@ -215,85 +215,85 @@ function App({ location }: any) {
           <BlueButton onClick={compile}>{"compile"}</BlueButton>
         </div>
       </nav>
-      <div style={{ display: "flex", flexGrow: 1, flexDirection: "column" }}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            height: "100%",
-          }}
-        >
-          <ColumnContainer show={state.openPanes.sub} numOpen={numOpen}>
-            {
-              <SubPane
-                value={state.currentInstance.sub}
-                domainCache={domainCache}
-                numOpen={numOpen}
-                dispatch={dispatch}
-              />
-            }
-          </ColumnContainer>
-          <ColumnContainer show={state.openPanes.sty} numOpen={numOpen}>
-            {
-              <StylePane
-                value={state.currentInstance.sty}
-                numOpen={numOpen}
-                dispatch={dispatch}
-              />
-            }
-          </ColumnContainer>
-          <ColumnContainer show={state.openPanes.dsl} numOpen={numOpen}>
-            <MonacoEditor
-              value={state.currentInstance.dsl}
-              onChange={(content) =>
-                dispatch({
-                  kind: "CHANGE_CODE",
-                  lang: "dsl",
-                  content: content as string,
-                })
-              }
-              width={`${window.innerWidth / numOpen}px`}
-              options={monacoOptions}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          height: "100%",
+          flex: 1,
+        }}
+      >
+        <ColumnContainer show={state.openPanes.sub} numOpen={numOpen}>
+          {
+            <SubPane
+              value={state.currentInstance.sub}
+              domainCache={domainCache}
+              numOpen={numOpen}
+              dispatch={dispatch}
             />
-          </ColumnContainer>
-          <ColumnContainer show={state.openPanes.preview} numOpen={numOpen}>
+          }
+        </ColumnContainer>
+        <ColumnContainer show={state.openPanes.sty} numOpen={numOpen}>
+          {
+            <StylePane
+              value={state.currentInstance.sty}
+              numOpen={numOpen}
+              dispatch={dispatch}
+            />
+          }
+        </ColumnContainer>
+        <ColumnContainer show={state.openPanes.dsl} numOpen={numOpen}>
+          <MonacoEditor
+            value={state.currentInstance.dsl}
+            onChange={(content) =>
+              dispatch({
+                kind: "CHANGE_CODE",
+                lang: "dsl",
+                content: content as string,
+              })
+            }
+            width={`${window.innerWidth / numOpen}px`}
+            options={monacoOptions}
+          />
+        </ColumnContainer>
+        <ColumnContainer show={state.openPanes.preview} numOpen={numOpen}>
+          <div
+            style={{
+              position: "absolute",
+              padding: "1em",
+              right: 0,
+              display: "flex",
+            }}
+          >
+            <BlueButton onClick={onResample}>resample</BlueButton>
+            <BlueButton onClick={svg}>SVG</BlueButton>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              overflow: "auto",
+              backgroundColor: "#ffffff",
+            }}
+            ref={canvasRef}
+          />
+          {state.currentInstance.err && (
             <div
               style={{
                 position: "absolute",
-                padding: "1em",
-                right: 0,
-                display: "flex",
+                bottom: 0,
+                backgroundColor: "#ffdada",
+                maxHeight: "400px",
+                maxWidth: "100%",
+                overflow: "auto",
+                padding: "10px",
+                boxSizing: "border-box",
               }}
             >
-              <BlueButton onClick={onResample}>resample</BlueButton>
-              <BlueButton onClick={svg}>SVG</BlueButton>
+              <pre>{showError(state.currentInstance.err).toString()}</pre>
             </div>
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                backgroundColor: "#ffffff",
-              }}
-              ref={canvasRef}
-            />
-            {state.currentInstance.err && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  backgroundColor: "#ffdada",
-                  maxHeight: "400px",
-                  maxWidth: "100%",
-                  overflow: "auto",
-                  padding: "10px",
-                  boxSizing: "border-box",
-                }}
-              >
-                <pre>{showError(state.currentInstance.err).toString()}</pre>
-              </div>
-            )}
-          </ColumnContainer>
-        </div>
+          )}
+        </ColumnContainer>
       </div>
     </div>
   );
