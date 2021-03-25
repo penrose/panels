@@ -320,7 +320,7 @@ export const SubstanceCompletions = (
   }));
   const predicates = [...domainCache.predicates.keys()].map((type) => ({
     label: type,
-    insertText: type + " $0",
+    insertText: type + "($0)",
     insertTextRules: languages.CompletionItemInsertTextRule.InsertAsSnippet,
     kind: languages.CompletionItemKind.Property,
     detail: "predicate",
@@ -328,7 +328,7 @@ export const SubstanceCompletions = (
   }));
   const constructors = [...domainCache.constructors.keys()].map((type) => ({
     label: type,
-    insertText: type + " $0",
+    insertText: type + "($0)",
     insertTextRules: languages.CompletionItemInsertTextRule.InsertAsSnippet,
     kind: languages.CompletionItemKind.Constructor,
     detail: "constructor",
