@@ -118,4 +118,5 @@ export const monacoOptions: editor.IStandaloneEditorConstructionOptions = {
   automaticLayout: true,
   minimap: { enabled: false },
   wordWrap: "on",
+  fontSize: 16,
 };
