@@ -1,6 +1,7 @@
 import { PenroseError, PenroseState } from "@penrose/core";
 import { cloneDeep, debounce } from "lodash";
 import React from "react";
+import { tryDomainHighlight } from "./Util";
 
 export interface PaneState {
   sub: boolean;
@@ -22,6 +23,8 @@ export interface CurrentInstance {
   sty: string;
   dsl: string;
   state: PenroseState | null;
+  /* For syntax highlighting */
+  domainCache: any | null;
   err: PenroseError | null;
 }
 export interface GithubUser {
@@ -43,7 +46,12 @@ export interface State {
 export const initialState = (): State => {
   const fromStorage = window.localStorage.getItem("state");
   if (fromStorage !== null) {
-    return JSON.parse(fromStorage);
+    const saved = JSON.parse(fromStorage);
+    const domainCache = tryDomainHighlight(saved.currentInstance.dsl);
+    return {
+      ...saved,
+      currentInstance: { ...saved.currentInstance, domainCache },
+    };
   }
   return {
     openPanes: { sub: true, sty: false, dsl: false, preview: true },
@@ -53,6 +61,7 @@ export const initialState = (): State => {
       dsl: "",
       state: null,
       err: null,
+      domainCache: null,
       authorship: {
         name: "untitled",
         madeBy: null,
@@ -71,6 +80,7 @@ export const debouncedSave = debounce((state: State) => {
   }
   const modifiedState = cloneDeep(state);
   delete modifiedState.currentInstance.state;
+  delete modifiedState.currentInstance.domainCache;
   modifiedState.currentInstance.err = null;
 
   window.localStorage.setItem("state", JSON.stringify(modifiedState));
@@ -83,6 +93,7 @@ export type Action =
   | { kind: "TOGGLE_PREVIEW_PANE" }
   | { kind: "CHANGE_CODE"; lang: "sub" | "sty" | "dsl"; content: string }
   | { kind: "SET_TRIO"; sub: string; sty: string; dsl: string }
+  | { kind: "SET_DOMAIN_CACHE"; domainCache: any | null }
   | { kind: "SET_AUTHORSHIP"; authorship: AuthorshipInfo }
   | { kind: "CHANGE_CANVAS_STATE"; content: PenroseState | null }
   | { kind: "CHANGE_ERROR"; content: PenroseError | null }
@@ -156,6 +167,14 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         currentInstance: { ...state.currentInstance, err: action.content },
+      };
+    case "SET_DOMAIN_CACHE":
+      return {
+        ...state,
+        currentInstance: {
+          ...state.currentInstance,
+          domainCache: action.domainCache,
+        },
       };
     case "CHANGE_TITLE":
       return {

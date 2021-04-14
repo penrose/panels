@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import styled from "styled-components";
 import { toast, ToastContainer } from "react-toastify";
 import MonacoEditor from "@monaco-editor/react";
@@ -19,6 +19,7 @@ import {
   DownloadSVG,
   monacoOptions,
   retrieveGist,
+  tryDomainHighlight,
   usePublishGist,
 } from "./Util";
 import AuthorshipTitle from "./components/AuthorshipTitle";
@@ -50,7 +51,6 @@ const ColumnContainer = styled.div<{ show: boolean; numOpen: number }>`
 
 function App({ location }: any) {
   const [state, dispatch] = useReducer(reducer, null, initialState);
-  const [domainCache, setDomainCache] = useState(null);
 
   useEffect(() => {
     debouncedSave(state);
@@ -76,6 +76,49 @@ function App({ location }: any) {
             avatar,
           },
         });
+      } else {
+        toast.error(
+          `Authentication failed: username=${username}, access_token=${access_token}, avatar=${avatar}`
+        );
+      }
+    } else if (location.pathname === "/repo" && location.search) {
+      const params = new URLSearchParams(location.search);
+      const prefix = params.get("prefix");
+      const sub = params.get("sub");
+      const sty = params.get("sty");
+      const dsl = params.get("dsl");
+      if (prefix && sub && sty && dsl) {
+        (async () => {
+          try {
+            const baseURL = `https://raw.githubusercontent.com/${prefix}/`;
+            const subContent = await (await fetch(baseURL + sub)).text();
+            const styContent = await (await fetch(baseURL + sty)).text();
+            const dslContent = await (await fetch(baseURL + dsl)).text();
+            dispatch({
+              kind: "SET_TRIO",
+              sub: subContent,
+              sty: styContent,
+              dsl: dslContent,
+            });
+            dispatch({
+              kind: "SET_AUTHORSHIP",
+              authorship: {
+                name: sub,
+                madeBy: "github repo",
+                gistID: null,
+                avatar: null,
+              },
+            });
+            tryDomainHighlight(dslContent, dispatch);
+          } catch (err) {
+            toast.error(`Couldn't retrieve files: ${err}`);
+          }
+        })();
+      } else {
+        toast.error(
+          `Invalid params: prefix=${prefix},
+          sub=${sub}, sty=${sty}, dsl=${dsl}`
+        );
       }
     }
   }, [location, dispatch]);
@@ -104,10 +147,7 @@ function App({ location }: any) {
     try {
       const { sub, sty, dsl } = state.currentInstance;
       const compileRes = compileTrio(dsl, sub, sty);
-      const domainComp = compileDomain(dsl);
-      if (domainComp.isOk()) {
-        setDomainCache(domainComp.value);
-      }
+      tryDomainHighlight(dsl, dispatch);
       if (compileRes.isOk()) {
         dispatch({ kind: "CHANGE_ERROR", content: null });
         (async () => {
@@ -227,7 +267,7 @@ function App({ location }: any) {
           {
             <SubPane
               value={state.currentInstance.sub}
-              domainCache={domainCache}
+              domainCache={state.currentInstance.domainCache}
               numOpen={numOpen}
               dispatch={dispatch}
             />

@@ -1,9 +1,10 @@
-import { Action, State } from "./reducer";
+import { Action, Dispatcher, State } from "./reducer";
 import dummyRegistry from "./dummy-registry.json";
 import { useCallback } from "react";
 import { Octokit } from "@octokit/rest";
 import { toast } from "react-toastify";
 import { editor } from "monaco-editor";
+import { compileDomain } from "@penrose/core";
 
 /**
  * (browser-only) Downloads any given exported SVG to the user's computer
@@ -88,10 +89,7 @@ export const usePublishGist = (
   }, [state]);
 };
 
-export const retrieveGist = async (
-  gistId: string,
-  dispatch: React.Dispatch<Action>
-) => {
+export const retrieveGist = async (gistId: string, dispatch: Dispatcher) => {
   const octokit = new Octokit();
   try {
     const { data } = await octokit.gists.get({ gist_id: gistId });
@@ -106,11 +104,24 @@ export const retrieveGist = async (
         kind: "SET_AUTHORSHIP",
         authorship: { ...metadata.authorship, gistID: gistId },
       });
+      tryDomainHighlight(dsl, dispatch);
     } else {
       toast.error("No files in gist");
     }
   } catch (err) {
     toast.error(`Could not retrieve gist ID: ${err.toString()}`);
+  }
+};
+
+export const tryDomainHighlight = (
+  dsl: string,
+  dispatch?: Dispatcher
+): any | null => {
+  const domainComp = compileDomain(dsl);
+  if (domainComp.isOk()) {
+    dispatch &&
+      dispatch({ kind: "SET_DOMAIN_CACHE", domainCache: domainComp.value });
+    return domainComp.value || null;
   }
 };
 

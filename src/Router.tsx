@@ -25,6 +25,7 @@ const Routing = () => {
     <Router>
       <Switch>
         <Route path="/authed" component={Redirector} />
+        <Route path="/repo" component={App} />
         <Route path="/gist/:gistId" component={App} />
         <Route path="/" component={App} />
       </Switch>
